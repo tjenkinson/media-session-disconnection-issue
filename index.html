@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <title>Media Session Disconnection Issue</title>
+  </head>
+  <body>
+    <p>Click GO to start playback. Then press the pause key. Playback pauses. Now press the play key.</p>
+    <p>Expected: The 'play' handler is called, and playback starts again.</p>
+    <p>Actual: The 'play' handler is never called.</p>
+
+    <button id="goBtn">GO</button>
+    <audio id="audio"></audio>
+    <script type="text/javascript">
+      const URL = 'https://s3-us-west-2.amazonaws.com/soundtest.soundcloud.com/maestro/test-assets/test_audio.mp3';
+      
+      const audio = document.getElementById('audio');
+      const goBtn = document.getElementById('goBtn');
+
+      goBtn.addEventListener('click', () => {
+        resetElement();
+        audio.play();
+        mediaSession.playbackState = 'playing';
+      });
+
+      const mediaSession = window.navigator.mediaSession;
+      mediaSession.setActionHandler('play', () => {
+        console.log('play');
+        audio.play();
+        mediaSession.playbackState = 'playing';
+      });
+
+      mediaSession.setActionHandler('pause', () => {
+        console.log('pause');
+        audio.pause();
+
+        // on soundcloud.com at this point we start a fade out with web audio, and then
+        // once the fade has completed we seek back to the position where the fade started.
+        // We use MSE, and when we seek, we create a new `MediaSource` object. `resetElement()`
+        // is meant to simulate that.
+
+        resetElement(); // <-- if you comment out this line, it works
+        mediaSession.playbackState = 'paused';
+      });
+
+      function resetElement() {
+        audio.removeAttribute('src');
+        audio.src = URL;
+      }
+
+    </script>
+  </body>
+</html>
